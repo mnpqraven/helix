@@ -707,7 +707,6 @@ where
 }
 
 use helix_lsp::{lsp, Client, LanguageServerId, LanguageServerName};
-use url::Url;
 
 impl Document {
     pub fn from(
@@ -2020,8 +2019,8 @@ impl Document {
     }
 
     /// File path as a URL.
-    pub fn url(&self) -> Option<Url> {
-        Url::from_file_path(self.path()?).ok()
+    pub fn url(&self) -> Option<lsp::Url> {
+        lsp::Url::from_file_path(self.path()?).ok()
     }
 
     pub fn uri(&self) -> Option<helix_core::Uri> {
@@ -2110,8 +2109,8 @@ impl Document {
     pub fn lsp_diagnostic_to_diagnostic(
         text: &Rope,
         language_config: Option<&LanguageConfiguration>,
-        diagnostic: &helix_lsp::lsp::Diagnostic,
-        provider: DiagnosticProvider,
+        diagnostic: &lsp::Diagnostic,
+        language_server_id: LanguageServerId,
         offset_encoding: helix_lsp::OffsetEncoding,
     ) -> Option<Diagnostic> {
         use helix_core::diagnostic::{Range, Severity::*};

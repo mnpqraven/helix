@@ -1521,8 +1521,10 @@ fn open_url(cx: &mut Context, url: Url, action: Action) {
         .map(|path| path.parent().unwrap().to_path_buf())
         .unwrap_or_default();
 
-    if should_open_url_externally(&url) {
-        return cx.jobs.callback(crate::open_external_url_callback(url));
+    if url.scheme() != "file" {
+        return cx
+            .jobs
+            .callback(crate::open_external_url_callback(url.as_str()));
     }
 
     let path = &rel_path.join(url.path());
@@ -1582,7 +1584,22 @@ fn should_open_url_externally(url: &Url) -> bool {
         Ok(content_inspector::inspect(&read_buffer[..n]))
     });
 
-    matches!(content_type, Ok(content_inspector::ContentType::BINARY))
+    // we attempt to open binary files - files that can't be open in helix - using external
+    // program as well, e.g. pdf files or images
+    match content_type {
+        Ok(content_inspector::ContentType::BINARY) => cx
+            .jobs
+            .callback(crate::open_external_url_callback(url.as_str())),
+        Ok(_) | Err(_) => {
+            let path = &rel_path.join(url.path());
+            if path.is_dir() {
+                let picker = ui::file_picker(cx.editor, path.into());
+                cx.push_layer(Box::new(overlaid(picker)));
+            } else if let Err(e) = cx.editor.open(path, action) {
+                cx.editor.set_error(format!("Open file failed: {:?}", e));
+            }
+        }
+    }
 }
 
 fn extend_word_impl<F>(cx: &mut Context, extend_fn: F)
