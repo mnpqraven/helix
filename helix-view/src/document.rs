@@ -2033,8 +2033,8 @@ impl Document {
     pub fn lsp_diagnostic_to_diagnostic(
         text: &Rope,
         language_config: Option<&LanguageConfiguration>,
-        diagnostic: &lsp::Diagnostic,
-        language_server_id: LanguageServerId,
+        diagnostic: &helix_lsp::lsp::Diagnostic,
+        provider: DiagnosticProvider,
         offset_encoding: helix_lsp::OffsetEncoding,
     ) -> Option<Diagnostic> {
         use helix_core::diagnostic::{Range, Severity::*};

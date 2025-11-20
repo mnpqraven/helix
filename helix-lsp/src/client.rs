@@ -162,7 +162,30 @@ impl Client {
             // and that we can therefore reuse the client (but are done now)
             return;
         }
-        tokio::spawn(self.did_change_workspace(vec![workspace], Vec::new()));
+        self.did_change_workspace(vec![workspace], Vec::new());
+    }
+
+    /// Merge FormattingOptions with 'config.format' and return it
+    fn get_merged_formatting_options(
+        &self,
+        options: lsp::FormattingOptions,
+    ) -> lsp::FormattingOptions {
+        let config_format = self
+            .config
+            .as_ref()
+            .and_then(|cfg| cfg.get("format"))
+            .and_then(|fmt| HashMap::<String, lsp::FormattingProperty>::deserialize(fmt).ok());
+
+        if let Some(mut properties) = config_format {
+            // passed in options take precedence over 'config.format'
+            properties.extend(options.properties);
+            lsp::FormattingOptions {
+                properties,
+                ..options
+            }
+        } else {
+            options
+        }
     }
 
     #[allow(clippy::type_complexity, clippy::too_many_arguments)]
@@ -190,7 +213,7 @@ impl Client {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .current_dir(&root_path)
+            .current_dir(&workspace)
             // make sure the process is reaped on drop
             .kill_on_drop(true)
             .spawn();

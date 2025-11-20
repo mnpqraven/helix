@@ -65,7 +65,10 @@ struct Location {
     offset_encoding: OffsetEncoding,
 }
 
-fn lsp_location_to_location(location: lsp::Location) -> Option<Location> {
+fn lsp_location_to_location(
+    location: lsp::Location,
+    offset_encoding: OffsetEncoding,
+) -> Option<Location> {
     let uri = match location.uri.as_str().try_into() {
         Ok(uri) => uri,
         Err(err) => {
@@ -474,24 +477,20 @@ pub fn workspace_symbol_picker(cx: &mut Context) {
                         })
                         .unwrap_or_default();
 
-                    let response: Vec<_> =
-                        serde_json::from_value::<Option<Vec<lsp::SymbolInformation>>>(json)?
-                            .unwrap_or_default()
-                            .into_iter()
-                            .filter_map(|symbol| {
-                                let uri = match Uri::try_from(symbol.location.uri.as_str()) {
-                                    Ok(uri) => uri,
-                                    Err(err) => {
-                                        log::warn!("discarding symbol with invalid URI: {err}");
-                                        return None;
-                                    }
-                                };
-                                Some(SymbolInformationItem {
-                                    location: Location {
-                                        uri,
-                                        range: symbol.location.range,
-                                    },
-                                    symbol,
+                    let response: Vec<_> = symbols
+                        .into_iter()
+                        .filter_map(|symbol| {
+                            let uri = match Uri::try_from(symbol.location.uri.as_str()) {
+                                Ok(uri) => uri,
+                                Err(err) => {
+                                    log::warn!("discarding symbol with invalid URI: {err}");
+                                    return None;
+                                }
+                            };
+                            Some(SymbolInformationItem {
+                                location: Location {
+                                    uri,
+                                    range: symbol.location.range,
                                     offset_encoding,
                                 },
                                 symbol,
